@@ -17,16 +17,25 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
+
 @Log4j2
 @Service
 public class PaycomAPIServiceImpl implements PaycomAPIService {
 
     private static final String EMPLOYEE_DIRECTORY_ENDPOINT = "/api/v1/employeedirectory";
     private static final String NEW_HIRE_FIELD_OPTIONS_ENDPOINT = "/api/v1/newhire/fieldoptions";
+    private static final Duration NEW_HIRE_FIELD_OPTIONS_CACHE_TTL = Duration.ofDays(1);
 
     private final RestTemplate restTemplate;
     private final ApplicationSettings.Paycom paycomSettings;
     private final ObjectMapper paycomObjectMapper;
+
+    // New Hire field options change rarely, so they're cached in memory and refreshed once a day
+    // rather than calling Paycom on every request.
+    private JsonNode cachedNewHireFieldOptions;
+    private Instant newHireFieldOptionsCachedAt;
 
     @Autowired
     public PaycomAPIServiceImpl(RestTemplate restTemplate,
@@ -43,8 +52,12 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
     }
 
     @Override
-    public JsonNode getNewHireFieldOptions() {
-        return get(NEW_HIRE_FIELD_OPTIONS_ENDPOINT, "new hire field options");
+    public synchronized JsonNode getNewHireFieldOptions() {
+        if (cachedNewHireFieldOptions == null || Instant.now().isAfter(newHireFieldOptionsCachedAt.plus(NEW_HIRE_FIELD_OPTIONS_CACHE_TTL))) {
+            cachedNewHireFieldOptions = get(NEW_HIRE_FIELD_OPTIONS_ENDPOINT, "new hire field options");
+            newHireFieldOptionsCachedAt = Instant.now();
+        }
+        return cachedNewHireFieldOptions;
     }
 
     /**
