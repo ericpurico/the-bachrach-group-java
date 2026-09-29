@@ -4,6 +4,8 @@ package com.client.custom.bullhorn.services;
 import com.bullhornsdk.data.api.BullhornData;
 import com.bullhornsdk.data.model.entity.core.standard.Candidate;
 import com.bullhornsdk.data.model.entity.core.standard.Placement;
+import com.bullhornsdk.data.model.parameter.SearchParams;
+import com.bullhornsdk.data.model.parameter.standard.ParamFactory;
 import com.client.custom.bullhorn.model.BullhornIssue;
 import com.client.custom.bullhorn.model.BullhornIssueItem;
 import com.client.custom.bullhorn.model.BullhornIssueReportRequest;
@@ -26,7 +28,7 @@ import java.util.Set;
 @Service
 public class BullhornServiceImpl implements BullhornService{
     private final Set<String> placementFields = new HashSet<>(Arrays.asList("id","candidate(id,firstName,lastName,middleName,email,name,mobile,employeeType)","status","dateAdded", "dateBegin","dateEnd", "customText5","employeeType"));
-    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded","employeeType"));
+    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded","employeeType","customText20"));
 
     private final BullhornData bullhornData;
     private final RestTemplate restTemplate;
@@ -76,4 +78,20 @@ public class BullhornServiceImpl implements BullhornService{
             log.warn("addIssue: failed to report issue for placementId={}: {}", placementId, e.getMessage());
         }
     }
+
+    @Override
+    public void updateCandidate(Candidate candidate) {
+        bullhornData.updateEntity(candidate);
+    }
+
+    @Override
+    public List<Candidate> searchCandidate(String query) {
+        SearchParams params = ParamFactory.searchParams();
+        params.setCount(500);
+        params.setSort("-id");
+        params.setStart(0);
+        return bullhornData.searchForList(Candidate.class, query, candidateFields, params);
+    }
+
+
 }

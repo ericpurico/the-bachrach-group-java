@@ -4,13 +4,11 @@ import com.bullhornsdk.data.model.entity.core.standard.Candidate;
 import com.bullhornsdk.data.model.entity.core.standard.Placement;
 import com.client.custom.bullhorn.services.BullhornService;
 import com.client.custom.paycom.model.request.PaycomNewHire;
-import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryEntry;
-import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
-import com.client.custom.paycom.model.response.PaycomNewHireDetail;
-import com.client.custom.paycom.model.response.PaycomNewHireResponse;
+import com.client.custom.paycom.model.response.*;
 import com.client.custom.paycom.services.PaycomAPIService;
 import com.client.custom.utils.DateUtil;
 import com.client.custom.utils.TextUtil;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Log4j2
 public class BusinessServiceImpl implements BusinessService{
 
     @Autowired
@@ -106,7 +105,9 @@ public class BusinessServiceImpl implements BusinessService{
                     && StringUtils.equalsIgnoreCase(newHireDetail.getPersonalEmail(), candidate.getEmail());
 
             if (isMatch) {
-                return newHireDetail.getNewEmployeeCode();
+                String paycomEmployeeCode = newHireDetail.getNewEmployeeCode();
+                this.writeEeCodeToBullhorn(candidate.getId(), paycomEmployeeCode);
+                return paycomEmployeeCode;
             }
         }
 
@@ -114,6 +115,27 @@ public class BusinessServiceImpl implements BusinessService{
                 "create new hire error - new hire was created in Paycom but could not be matched by name/email among the recent new hire ids", null);
         return null;
     }
+
+    private void writeEeCodeToBullhorn(Integer candidateId, String eeCode){
+        //todo: field to be confirmed
+        Candidate candidate = new Candidate(candidateId);
+        candidate.setCustomText20(eeCode);
+        bullhornService.updateCandidate(candidate);
+        log.info("Candidate eecode updated: {}-{}", candidateId, eeCode);
+    }
+
+    private Candidate findCandidateByEeCode(String eeCode){
+        //todo: field to be confirmed
+        String query = "isDeleted:false AND NOT status:Archive AND customText20:("+eeCode+")";
+        List<Candidate> candidates = bullhornService.searchCandidate(query);
+        List<Candidate> filteredCandidates = candidates.stream().filter(s->StringUtils.equalsIgnoreCase(s.getCustomText20(),eeCode)).collect(Collectors.toList());
+        if(filteredCandidates.size()>0){
+            return filteredCandidates.get(0);
+        }
+        return null;
+    }
+
+
 
     private String getExistingEmployeeCode(Candidate candidate){
         List<PaycomEmployeeDirectoryEntry> allEmployees = new ArrayList<>();
@@ -137,8 +159,17 @@ public class BusinessServiceImpl implements BusinessService{
 
         for(PaycomEmployeeDirectoryEntry employee: filteredEmployees){
             //get the employee entity so we can get the email to compare
+            PaycomEmployeeDetail employeeDetail = paycomAPIService.getEmployeeById(employee.getEecode());
+            if(employeeDetail == null){
+                continue;
+            }
+            boolean isMatch = StringUtils.equalsIgnoreCase(employeeDetail.getFirstName(), candidate.getFirstName())
+                    && StringUtils.equalsIgnoreCase(employeeDetail.getLastName(), candidate.getLastName())
+                    && StringUtils.equalsIgnoreCase(employeeDetail.getPersonalEmail(), candidate.getEmail());
 
-
+            if (isMatch) {
+                return employeeDetail.getEmployeeCode();
+            }
 
         }
 
