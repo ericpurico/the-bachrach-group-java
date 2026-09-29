@@ -25,8 +25,8 @@ import java.util.Set;
 @Log4j2
 @Service
 public class BullhornServiceImpl implements BullhornService{
-    private final Set<String> placementFields = new HashSet<>(Arrays.asList("id","candidate(id,firstName,lastName,middleName,email,name,mobile)","status","dateAdded", "dateBegin","dateEnd", "customText5"));
-    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded"));
+    private final Set<String> placementFields = new HashSet<>(Arrays.asList("id","candidate(id,firstName,lastName,middleName,email,name,mobile,employeeType)","status","dateAdded", "dateBegin","dateEnd", "customText5","employeeType"));
+    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded","employeeType"));
 
     private final BullhornData bullhornData;
     private final RestTemplate restTemplate;
