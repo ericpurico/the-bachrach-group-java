@@ -2,6 +2,8 @@ package com.client.custom.paycom.services;
 
 import com.client.custom.paycom.exception.PaycomApiException;
 import com.client.custom.paycom.model.request.PaycomNewHire;
+import com.client.custom.paycom.model.response.PaycomEmployeeDetail;
+import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
 import com.client.custom.paycom.model.response.PaycomNewHireDetail;
 import com.client.custom.paycom.model.response.PaycomNewHireResponse;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,7 +18,7 @@ public interface PaycomAPIService {
      * Basic Auth credentials (SID/Token) are valid and the connection is working. Throws
      * {@link PaycomApiException} on any failure (rejected call, auth failure, unparseable response).
      */
-    JsonNode getEmployeeDirectory();
+    PaycomEmployeeDirectoryResponse getEmployeeDirectory(Integer page, Integer pageSize);
 
     /**
      * Calls the Paycom New Hire Field Options endpoint - GET api/v1/newhire/fieldoptions - which
@@ -26,6 +28,12 @@ public interface PaycomAPIService {
     JsonNode getNewHireFieldOptions();
 
     JsonNode getNewHireIds();
+
+    /**
+     * Calls the Paycom Employee endpoint - GET api/v1/employee/{employeeCode} - and returns the
+     * single employee it describes, or null if Paycom returned no data for that code.
+     */
+    PaycomEmployeeDetail getEmployeeById(String employeeCode);
 
     /**
      * Calls the Paycom New Hire endpoint - GET api/v1/newhire/{id} - and returns the single new

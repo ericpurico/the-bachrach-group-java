@@ -3,6 +3,9 @@ package com.client.custom.paycom.services;
 import com.client.ApplicationSettings;
 import com.client.custom.paycom.exception.PaycomApiException;
 import com.client.custom.paycom.model.request.PaycomNewHire;
+import com.client.custom.paycom.model.response.PaycomEmployeeDetail;
+import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
+import com.client.custom.paycom.model.response.PaycomEmployeeResponse;
 import com.client.custom.paycom.model.response.PaycomNewHireDetail;
 import com.client.custom.paycom.model.response.PaycomNewHireDetailResponse;
 import com.client.custom.paycom.model.response.PaycomNewHireIdEntry;
@@ -43,6 +46,8 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
     private static final String NEW_HIRE_CREATE_ENDPOINT = "/api/v1/newhire/createnewhire";
     private static final String EMPLOYEE_NEW_HIRE_ID_ENDPOINT = "/api/v1/newhireids";
     private static final String EMPLOYEE_NEW_HIRE_ENDPOINT = "/api/v1/newhire";
+
+    private static final String EMPLOYEE_ENDPOINT = "/api/v1/employee";
     private static final Duration NEW_HIRE_FIELD_OPTIONS_CACHE_TTL = Duration.ofDays(1);
 
     // addedOnDate on the newhireids endpoint carries no timezone marker - treated as
@@ -71,9 +76,24 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
 
 
     @Override
-    public JsonNode getEmployeeDirectory() {
-        return get(EMPLOYEE_DIRECTORY_ENDPOINT, "employee directory");
+    public PaycomEmployeeDirectoryResponse getEmployeeDirectory(Integer page, Integer pageSize) {
+        if(page==null){
+            page=1;
+        }
+        if(pageSize==null){
+            pageSize=500;
+        }
+        String descriptor = "employee directory";
+        JsonNode responseJson = get(EMPLOYEE_DIRECTORY_ENDPOINT+"?page="+page+"&pagesize="+pageSize, descriptor);
+
+        try {
+            return paycomObjectMapper.treeToValue(responseJson, PaycomEmployeeDirectoryResponse.class);
+        } catch (Exception e) {
+            throw new PaycomApiException("Could not parse Paycom's response for " + descriptor, null, responseJson.toString(), e);
+        }
     }
+
+
 
     @Override
     public synchronized JsonNode getNewHireFieldOptions() {
@@ -87,6 +107,24 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
     @Override
     public JsonNode getNewHireIds() {
         return get(EMPLOYEE_NEW_HIRE_ID_ENDPOINT, "new hire id");
+    }
+
+    @Override
+    public PaycomEmployeeDetail getEmployeeById(String employeeCode) {
+        String descriptor = "employee code=" + employeeCode;
+        JsonNode responseJson = get(EMPLOYEE_ENDPOINT + "/" + employeeCode, descriptor);
+
+        PaycomEmployeeResponse employeeResponse;
+        try {
+            employeeResponse = paycomObjectMapper.treeToValue(responseJson, PaycomEmployeeResponse.class);
+        } catch (Exception e) {
+            throw new PaycomApiException("Could not parse Paycom's response for " + descriptor, null, responseJson.toString(), e);
+        }
+
+        if (employeeResponse.getData() == null || employeeResponse.getData().isEmpty()) {
+            return null;
+        }
+        return employeeResponse.getData().get(0);
     }
 
     @Override

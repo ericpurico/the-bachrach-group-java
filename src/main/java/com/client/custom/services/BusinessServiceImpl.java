@@ -4,6 +4,8 @@ import com.bullhornsdk.data.model.entity.core.standard.Candidate;
 import com.bullhornsdk.data.model.entity.core.standard.Placement;
 import com.client.custom.bullhorn.services.BullhornService;
 import com.client.custom.paycom.model.request.PaycomNewHire;
+import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryEntry;
+import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
 import com.client.custom.paycom.model.response.PaycomNewHireDetail;
 import com.client.custom.paycom.model.response.PaycomNewHireResponse;
 import com.client.custom.paycom.services.PaycomAPIService;
@@ -14,7 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BusinessServiceImpl implements BusinessService{
@@ -39,6 +43,13 @@ public class BusinessServiceImpl implements BusinessService{
 
         Placement placement = bullhornService.getPlacementById(placementId);
         Candidate candidate = placement.getCandidate();
+
+        //dedupe first maybe we should also check the current employee id
+
+        String employeeCode = this.getExistingEmployeeCode(candidate);
+        if(employeeCode!=null){
+            return employeeCode;
+        }
 
 
         PaycomNewHire newHire = new PaycomNewHire();
@@ -101,6 +112,36 @@ public class BusinessServiceImpl implements BusinessService{
 
         bullhornService.addIssue(candidate.getId(), placement.getId(),
                 "create new hire error - new hire was created in Paycom but could not be matched by name/email among the recent new hire ids", null);
+        return null;
+    }
+
+    private String getExistingEmployeeCode(Candidate candidate){
+        List<PaycomEmployeeDirectoryEntry> allEmployees = new ArrayList<>();
+
+        Integer page = 1;
+        Integer pageSize = 500;
+
+        while(true){
+            PaycomEmployeeDirectoryResponse response = paycomAPIService.getEmployeeDirectory(page, pageSize);
+            if(response==null || response.getData()==null || response.getData().isEmpty()){
+                break;
+            }
+            allEmployees.addAll(response.getData());
+            page = page + 1;
+        }
+
+        List<PaycomEmployeeDirectoryEntry> filteredEmployees = allEmployees.stream().filter(s->StringUtils.equalsIgnoreCase(candidate.getLastName(), s.getLastName()) && StringUtils.equalsIgnoreCase(StringUtils.substring(candidate.getFirstName(),2), StringUtils.substring(s.getLastName(),2))).toList();
+        if(filteredEmployees.isEmpty()){
+            return null;
+        }
+
+        for(PaycomEmployeeDirectoryEntry employee: filteredEmployees){
+            //get the employee entity so we can get the email to compare
+
+
+
+        }
+
         return null;
     }
 }
