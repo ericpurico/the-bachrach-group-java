@@ -2,6 +2,7 @@ package com.client.custom.paycom.services;
 
 import com.client.custom.paycom.exception.PaycomApiException;
 import com.client.custom.paycom.model.request.PaycomNewHire;
+import com.client.custom.paycom.model.response.PaycomEmployeeChangeEntry;
 import com.client.custom.paycom.model.response.PaycomEmployeeDetail;
 import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
 import com.client.custom.paycom.model.response.PaycomNewHireDetail;
@@ -60,4 +61,11 @@ public interface PaycomAPIService {
      * errorCount).
      */
     PaycomNewHireResponse createNewHire(PaycomNewHire newHire);
+
+    /**
+     * Calls the Paycom Employee Changes endpoint - GET api/v1/employeeids/employeechanges - and
+     * returns, for the given date range, each employee (eecode) who had a field change along with
+     * how many changes they had. startDate/endDate are Unix timestamps (seconds).
+     */
+    List<PaycomEmployeeChangeEntry> getEmployeeChanges(long startDate, long endDate);
 }

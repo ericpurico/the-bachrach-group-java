@@ -3,6 +3,8 @@ package com.client.custom.paycom.services;
 import com.client.ApplicationSettings;
 import com.client.custom.paycom.exception.PaycomApiException;
 import com.client.custom.paycom.model.request.PaycomNewHire;
+import com.client.custom.paycom.model.response.PaycomEmployeeChangeEntry;
+import com.client.custom.paycom.model.response.PaycomEmployeeChangesResponse;
 import com.client.custom.paycom.model.response.PaycomEmployeeDetail;
 import com.client.custom.paycom.model.response.PaycomEmployeeDirectoryResponse;
 import com.client.custom.paycom.model.response.PaycomEmployeeResponse;
@@ -48,6 +50,7 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
     private static final String EMPLOYEE_NEW_HIRE_ENDPOINT = "/api/v1/newhire";
 
     private static final String EMPLOYEE_ENDPOINT = "/api/v1/employee";
+    private static final String EMPLOYEE_CHANGES_ENDPOINT = "/api/v1/employeeids/employeechanges";
     private static final Duration NEW_HIRE_FIELD_OPTIONS_CACHE_TTL = Duration.ofDays(1);
 
     // addedOnDate on the newhireids endpoint carries no timezone marker - treated as
@@ -233,6 +236,21 @@ public class PaycomAPIServiceImpl implements PaycomAPIService {
         }
 
         return newHireResponse;
+    }
+
+    @Override
+    public List<PaycomEmployeeChangeEntry> getEmployeeChanges(long startDate, long endDate) {
+        String descriptor = "employee changes startdate=" + startDate + " enddate=" + endDate;
+        JsonNode responseJson = get(EMPLOYEE_CHANGES_ENDPOINT + "?startdate=" + startDate + "&enddate=" + endDate, descriptor);
+
+        PaycomEmployeeChangesResponse changesResponse;
+        try {
+            changesResponse = paycomObjectMapper.treeToValue(responseJson, PaycomEmployeeChangesResponse.class);
+        } catch (Exception e) {
+            throw new PaycomApiException("Could not parse Paycom's response for " + descriptor, null, responseJson.toString(), e);
+        }
+
+        return changesResponse.getData() == null ? List.of() : changesResponse.getData();
     }
 
     /**

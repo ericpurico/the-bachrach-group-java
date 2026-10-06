@@ -23,12 +23,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import static com.client.custom.model.IntegrationFields.*;
 
 @Log4j2
 @Service
 public class BullhornServiceImpl implements BullhornService{
-    private final Set<String> placementFields = new HashSet<>(Arrays.asList("id","candidate(id,firstName,lastName,middleName,email,name,mobile,employeeType)","status","dateAdded", "dateBegin","dateEnd", "customText5","employeeType"));
-    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded","employeeType","customText20"));
+    private final Set<String> placementFields = new HashSet<>(Arrays.asList("id","candidate(id,firstName,lastName,middleName,email,name,mobile,employeeType,"+EE_CODE_FIELD+","+NEW_HIRE_ID_FIELD+")","status","dateAdded", "dateBegin","dateEnd", "customText5","employeeType"));
+    private final Set<String> candidateFields = new HashSet<>(Arrays.asList("id","firstName","lastName", "middleName","name","email","mobile","status","dateAdded","employeeType",EE_CODE_FIELD, NEW_HIRE_ID_FIELD));
 
     private final BullhornData bullhornData;
     private final RestTemplate restTemplate;

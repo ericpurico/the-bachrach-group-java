@@ -7,6 +7,7 @@ import com.client.custom.paycom.model.request.PaycomNewHire;
 import com.client.custom.paycom.model.response.*;
 import com.client.custom.paycom.services.PaycomAPIService;
 import com.client.custom.utils.DateUtil;
+import com.client.custom.utils.FieldUtil;
 import com.client.custom.utils.TextUtil;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +18,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import static com.client.custom.model.IntegrationFields.*;
 
 @Service
 @Log4j2
@@ -27,6 +29,9 @@ public class BusinessServiceImpl implements BusinessService{
 
     @Autowired
     private PaycomAPIService paycomAPIService;
+
+    //@Autowired
+    //private FieldUtil fieldUtil;
 
     //todo: use a default location?
     private static Integer DEFAULT_LOCATION_ID = 21185;
@@ -124,16 +129,28 @@ public class BusinessServiceImpl implements BusinessService{
         log.info("Candidate eecode updated: {}-{}", candidateId, eeCode);
     }
 
-    private Candidate findCandidateByEeCode(String eeCode){
+    public Candidate findCandidateByEeCode(String eeCode){
         //todo: field to be confirmed
-        String query = "isDeleted:false AND NOT status:Archive AND customText20:("+eeCode+")";
+        String query = "isDeleted:false AND NOT status:Archive AND "+EE_CODE_FIELD+":("+eeCode+")";
         List<Candidate> candidates = bullhornService.searchCandidate(query);
-        List<Candidate> filteredCandidates = candidates.stream().filter(s->StringUtils.equalsIgnoreCase(s.getCustomText20(),eeCode)).collect(Collectors.toList());
+        List<Candidate> filteredCandidates = candidates.stream().filter(s->StringUtils.equalsIgnoreCase(FieldUtil.getCandidateFieldValue(s, EE_CODE_FIELD),eeCode)).collect(Collectors.toList());
         if(filteredCandidates.size()>0){
             return filteredCandidates.get(0);
         }
         return null;
     }
+
+    public Candidate findCandidateByNewHireId(String newHireId){
+        //todo: field to be confirmed
+        String query = "isDeleted:false AND NOT status:Archive AND "+NEW_HIRE_ID_FIELD+":("+newHireId+")";
+        List<Candidate> candidates = bullhornService.searchCandidate(query);
+        List<Candidate> filteredCandidates = candidates.stream().filter(s->StringUtils.equalsIgnoreCase(FieldUtil.getCandidateFieldValue(s, NEW_HIRE_ID_FIELD),newHireId)).collect(Collectors.toList());
+        if(filteredCandidates.size()>0){
+            return filteredCandidates.get(0);
+        }
+        return null;
+    }
+
 
 
 
