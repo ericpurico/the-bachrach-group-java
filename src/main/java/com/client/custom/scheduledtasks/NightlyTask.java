@@ -3,6 +3,7 @@ package com.client.custom.scheduledtasks;
 import com.bullhornsdk.data.model.entity.core.standard.Candidate;
 import com.client.custom.bullhorn.services.BullhornService;
 import com.client.custom.paycom.model.response.PaycomEmployeeChangeEntry;
+import com.client.custom.paycom.model.response.PaycomEmployeeDetail;
 import com.client.custom.paycom.services.PaycomAPIService;
 import com.client.custom.services.BusinessService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,13 +53,22 @@ public class NightlyTask {
         List<String> recentlyUpdatedEmployeeIds = Stream.concat(firstBatch.stream(), secondBatch.stream())
                 .map(PaycomEmployeeChangeEntry::getEecode)
                 .distinct()
-                .collect(Collectors.toList());
-
-        //todo: for each id in recentlyUpdatedEmployeeIds, look up the matching Bullhorn candidate
-        // (e.g. businessService.findCandidateByEeCode) and sync whatever Paycom fields changed
+                .toList();
 
 
-        
+        for(String eeCode : recentlyUpdatedEmployeeIds){
+            Candidate candidate = businessService.findCandidateByEeCode(eeCode);
+            if(candidate == null){
+                continue;
+            }
+            Integer bhCandidateId = candidate.getId();
+            //get the candidate
+            PaycomEmployeeDetail employeeDetail = paycomAPIService.getEmployeeById(eeCode);
+            if(employeeDetail == null){
+                this.processEmployeeChange(bhCandidateId, employeeDetail);
+            }
+        }
+
     }
 
     private void processNewHires(){
@@ -71,6 +81,11 @@ public class NightlyTask {
                 bullhornService.addIssue(null,null, "new hire not in BH: "+newlyHiredId,null);
             }
         }
+
+    }
+
+    //todo:
+    private void processEmployeeChange(Integer bhCandidateId, PaycomEmployeeDetail paycomEmployee){
 
     }
 
